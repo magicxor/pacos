@@ -45,20 +45,27 @@ public class Program
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
 
-                services.AddHttpClient(nameof(HttpClientTypes.Normal))
+                services.AddHttpClient(nameof(HttpClientTypes.Telegram))
                     .AddPolicyHandler(HttpRetryPolicy);
 
-                services.AddHttpClient(nameof(HttpClientTypes.LongTimeout))
-                    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5))
-                    .AddPolicyHandler(HttpRetryPolicy);
+                services.AddHttpClient(nameof(HttpClientTypes.Kobold))
+                    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5));
 
                 var koboldApiAddress = hostContext.Configuration.GetKoboldApiAddress()
                                                 ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.KoboldApiAddressMissing);
                 services.AddScoped<IKoboldApi>(s =>
                 {
                     var httpClient = s.GetRequiredService<IHttpClientFactory>()
-                        .CreateClient(nameof(HttpClientTypes.LongTimeout));
+                        .CreateClient(nameof(HttpClientTypes.Kobold));
                     httpClient.BaseAddress = new Uri(koboldApiAddress);
+
+                    /*
+                        var httpClient = new HttpClient(new HttpLoggingHandler())
+                        {
+                            Timeout = TimeSpan.FromMinutes(5),
+                            BaseAddress = new Uri(koboldApiAddress),
+                        };
+                     */
 
                     var koboldApi = RestService.For<IKoboldApi>(httpClient,
                         new RefitSettings {
@@ -74,7 +81,7 @@ public class Program
                                         ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.TelegramBotApiKeyMissing);
                 services.AddScoped<ITelegramBotClient, TelegramBotClient>(s => new TelegramBotClient(telegramBotApiKey,
                     s.GetRequiredService<IHttpClientFactory>()
-                        .CreateClient(nameof(HttpClientTypes.Normal))));
+                        .CreateClient(nameof(HttpClientTypes.Telegram))));
 
                 services.AddHostedService<QueuedHostedService>();
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(100));

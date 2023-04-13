@@ -2,6 +2,6 @@
 
 public enum HttpClientTypes
 {
-    Normal,
-    LongTimeout,
+    Telegram,
+    Kobold,
 }
