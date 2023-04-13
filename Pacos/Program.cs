@@ -55,17 +55,19 @@ public class Program
                                                 ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.KoboldApiAddressMissing);
                 services.AddScoped<IKoboldApi>(s =>
                 {
+                    /*
                     var httpClient = s.GetRequiredService<IHttpClientFactory>()
                         .CreateClient(nameof(HttpClientTypes.Kobold));
                     httpClient.BaseAddress = new Uri(koboldApiAddress);
+                    */
 
-                    /*
+
                         var httpClient = new HttpClient(new HttpLoggingHandler())
                         {
                             Timeout = TimeSpan.FromMinutes(5),
                             BaseAddress = new Uri(koboldApiAddress),
                         };
-                     */
+
 
                     var koboldApi = RestService.For<IKoboldApi>(httpClient,
                         new RefitSettings {
