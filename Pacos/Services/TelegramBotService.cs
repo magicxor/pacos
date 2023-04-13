@@ -73,6 +73,8 @@ public class TelegramBotService
                              update.Message.From?.FirstName + " " + update.Message.From?.LastName;
                 var updateMessageTextTrimmed = updateMessageText[MentionText.Length..];
 
+                _logger.LogInformation("New prompt {updateMessageTextTrimmed} from {author}", updateMessageTextTrimmed, author);
+
                 var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
                 var template = language?.Item1?.Iso639_3 == "rus"
                     ? ChatTemplateFactory.GetRussianTemplate(author, updateMessageTextTrimmed)
@@ -120,6 +122,8 @@ public class TelegramBotService
                         }
                     }
                 }
+
+                _logger.LogInformation("Response {generatedResult}", generatedResult);
 
                 await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id),
                     generatedResult.Cut(MaxTelegramMessageLength, "empty"),
