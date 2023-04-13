@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 using NTextCat;
 using Pacos.Extensions;
 using Pacos.Models;
@@ -27,6 +28,7 @@ public class TelegramBotService
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
     private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
+    private static readonly Regex NewChatMessageWithNickRegex = new(@"\n\w+:\s", RegexOptions.Compiled);
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -103,11 +105,12 @@ public class TelegramBotService
 
                 var generatedResult = koboldResponse.Results?.FirstOrDefault()?.Text ?? "Error: kobold response is empty";
 
-                var authorPhraseIndex = generatedResult.IndexOf($"{author}:", StringComparison.Ordinal);
-                if (authorPhraseIndex >= 0)
+                var newChatMessageWithNickMatch = NewChatMessageWithNickRegex.Match(generatedResult);
+
+                if (newChatMessageWithNickMatch.Success)
                 {
                     // GPT thinks up the following dialogue, so we need to remove it
-                    generatedResult = generatedResult[..authorPhraseIndex];
+                    generatedResult = generatedResult[..newChatMessageWithNickMatch.Index];
                 }
                 else
                 {
