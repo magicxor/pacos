@@ -7,6 +7,7 @@ using Pacos.Exceptions;
 using Pacos.Extensions;
 using Pacos.Models;
 using Pacos.Services;
+using Pacos.Services.BackgroundTasks;
 using Polly;
 using Polly.Extensions.Http;
 using Refit;
@@ -46,7 +47,7 @@ public class Program
 
                 services.AddHttpClient(nameof(HttpClientTypes.Normal))
                     .AddPolicyHandler(HttpRetryPolicy);
-                
+
                 services.AddHttpClient(nameof(HttpClientTypes.LongTimeout))
                     .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5))
                     .AddPolicyHandler(HttpRetryPolicy);
@@ -58,23 +59,26 @@ public class Program
                     var httpClient = s.GetRequiredService<IHttpClientFactory>()
                         .CreateClient(nameof(HttpClientTypes.LongTimeout));
                     httpClient.BaseAddress = new Uri(koboldApiAddress);
-                    
-                    var koboldApi = RestService.For<IKoboldApi>(httpClient, 
+
+                    var koboldApi = RestService.For<IKoboldApi>(httpClient,
                         new RefitSettings {
                             ContentSerializer = new SystemTextJsonContentSerializer(),
                         });
-                    
+
                     // koboldApi.Client.Timeout = TimeSpan.FromMinutes(5);
-                    
+
                     return koboldApi;
                 });
-                
+
                 var telegramBotApiKey = hostContext.Configuration.GetTelegramBotApiKey()
                                         ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.TelegramBotApiKeyMissing);
                 services.AddScoped<ITelegramBotClient, TelegramBotClient>(s => new TelegramBotClient(telegramBotApiKey,
                     s.GetRequiredService<IHttpClientFactory>()
                         .CreateClient(nameof(HttpClientTypes.Normal))));
-                
+
+                services.AddHostedService<QueuedHostedService>();
+                services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(100));
+
                 services.AddScoped<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load("Core14.profile.xml"));
                 services.AddScoped<TelegramBotService>();
 

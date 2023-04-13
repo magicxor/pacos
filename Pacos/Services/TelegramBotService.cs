@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Options;
 using NTextCat;
+using Pacos.Extensions;
 using Pacos.Models;
+using Pacos.Services.BackgroundTasks;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -16,9 +18,9 @@ public class TelegramBotService
     private readonly ITelegramBotClient _telegramBotClient;
     private readonly RankedLanguageIdentifier _rankedLanguageIdentifier;
     private readonly IKoboldApi _koboldApi;
+    private readonly IBackgroundTaskQueue _taskQueue;
 
-    private const int MaxTelegramInlineCaptionLength = 256;
-    private const int MaxTelegramMediaCaptionLength = 1024;
+    private const int MaxTelegramMessageLength = 4096;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
 
     private static readonly ReceiverOptions ReceiverOptions = new()
@@ -31,13 +33,15 @@ public class TelegramBotService
         IOptions<PacosOptions> options,
         ITelegramBotClient telegramBotClient,
         RankedLanguageIdentifier rankedLanguageIdentifier,
-        IKoboldApi koboldApi)
+        IKoboldApi koboldApi,
+        IBackgroundTaskQueue taskQueue)
     {
         _logger = logger;
         _options = options.Value;
         _telegramBotClient = telegramBotClient;
         _rankedLanguageIdentifier = rankedLanguageIdentifier;
         _koboldApi = koboldApi;
+        _taskQueue = taskQueue;
     }
 
     private async Task HandleUpdateAsync(ITelegramBotClient botClient,
@@ -45,7 +49,9 @@ public class TelegramBotService
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Received update with type={update}", update.Type.ToString());
-        ThreadPool.QueueUserWorkItem(async _ => await HandleUpdateFunction(botClient, update, cancellationToken));
+
+        await _taskQueue.QueueBackgroundWorkItemAsync(async token =>
+            await HandleUpdateFunction(botClient, update, cancellationToken));
     }
 
     private async Task HandleUpdateFunction(ITelegramBotClient botClient,
@@ -64,12 +70,12 @@ public class TelegramBotService
                 var template = language?.Item1?.Iso639_3 == "rus"
                     ? ChatTemplateFactory.GetRussianTemplate(author, updateMessageText)
                     : ChatTemplateFactory.GetEnglishTemplate(author, updateMessageText);
-                
+
                 var koboldResponse = await _koboldApi.Generate(new KoboldRequest
                 {
                     N = 1,
                     MaxContextLength = 1024,
-                    MaxLength = 80,
+                    MaxLength = 255,
                     RepPen = 1.2,
                     Temperature = 0.51,
                     TopP = 1,
@@ -82,7 +88,7 @@ public class TelegramBotService
                     SamplerOrder = new List<int> { 5, 0, 2, 3, 1, 4, 6 },
                     Quiet = true,
                     Prompt = template,
-                });
+                }, cancellationToken);
 
                 var generatedResult = koboldResponse.Results?.FirstOrDefault()?.Text ?? "Error: kobold response is empty";
 
@@ -104,8 +110,8 @@ public class TelegramBotService
                         }
                     }
                 }
-                
-                await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id), generatedResult, cancellationToken: cancellationToken);
+
+                await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id), generatedResult.Cut(MaxTelegramMessageLength, "empty"), cancellationToken: cancellationToken);
             }
         }
         catch (Exception e)
