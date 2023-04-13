@@ -121,7 +121,10 @@ public class TelegramBotService
                     }
                 }
 
-                await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id), generatedResult.Cut(MaxTelegramMessageLength, "empty"), cancellationToken: cancellationToken);
+                await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id),
+                    generatedResult.Cut(MaxTelegramMessageLength, "empty"),
+                    replyToMessageId: update.Message.MessageId,
+                    cancellationToken: cancellationToken);
             }
         }
         catch (Exception e)
