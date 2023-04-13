@@ -49,7 +49,7 @@ public class Program
                     .AddPolicyHandler(HttpRetryPolicy);
 
                 services.AddHttpClient(nameof(HttpClientTypes.Kobold))
-                    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(5));
+                    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(10));
 
                 var koboldApiAddress = hostContext.Configuration.GetKoboldApiAddress()
                                                 ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.KoboldApiAddressMissing);
@@ -64,7 +64,7 @@ public class Program
 
                         var httpClient = new HttpClient(new HttpLoggingHandler())
                         {
-                            Timeout = TimeSpan.FromMinutes(5),
+                            Timeout = TimeSpan.FromMinutes(10),
                             BaseAddress = new Uri(koboldApiAddress),
                         };
 
