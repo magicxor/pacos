@@ -74,7 +74,7 @@ public class TelegramBotService
             {
                 var author = update.Message.From?.Username ??
                              update.Message.From?.FirstName + " " + update.Message.From?.LastName;
-                var updateMessageTextTrimmed = updateMessageText[MentionText.Length..];
+                var updateMessageTextTrimmed = updateMessageText[MentionText.Length..].Trim();
 
                 _logger.LogInformation("New prompt {updateMessageTextTrimmed} from {author}", updateMessageTextTrimmed, author);
 
