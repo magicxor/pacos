@@ -74,8 +74,8 @@ public class TelegramBotService
                 var koboldResponse = await _koboldApi.Generate(new KoboldRequest
                 {
                     N = 1,
-                    MaxContextLength = 1024,
-                    MaxLength = 255,
+                    MaxContextLength = MaxTelegramMessageLength + template.Length,
+                    MaxLength = 140,
                     RepPen = 1.2,
                     Temperature = 0.51,
                     TopP = 1,
