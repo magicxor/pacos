@@ -25,7 +25,7 @@ public class TelegramBotService
     private const int MaxUsualResponseLength = 140;
     private const int MaxProgrammingResponseLength = 400;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
-    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", "программу", "код" };
+    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
 
     private static readonly ReceiverOptions ReceiverOptions = new()
