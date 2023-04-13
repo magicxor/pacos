@@ -22,6 +22,7 @@ public class TelegramBotService
 
     private const int MaxTelegramMessageLength = 4096;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
+    private static readonly string[] ProgrammingMathMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -100,7 +101,8 @@ public class TelegramBotService
                 }
                 else
                 {
-                    if (!ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith(eos)))
+                    if (!ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith(eos))
+                        && !ProgrammingMathMarkers.Any(pm => generatedResult.Contains(pm)))
                     {
                         // GPT couldn't complete the sentence, so we need to remove the incomplete sentence
                         var lastValidEndOfSentenceCharacter = generatedResult.LastIndexOfAny(ValidEndOfSentenceCharacters);
