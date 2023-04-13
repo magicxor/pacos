@@ -20,9 +20,13 @@ public class TelegramBotService
     private readonly IKoboldApi _koboldApi;
     private readonly IBackgroundTaskQueue _taskQueue;
 
+    private const string MentionText = "пакос,";
     private const int MaxTelegramMessageLength = 4096;
+    private const int MaxUsualResponseLength = 140;
+    private const int MaxProgrammingResponseLength = 400;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
-    private static readonly string[] ProgrammingMathMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
+    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", "программу", "код" };
+    private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -62,21 +66,25 @@ public class TelegramBotService
         try
         {
             if (update is { Type: UpdateType.Message, Message.Text: { } updateMessageText }
-                && updateMessageText.StartsWith("пакос,", StringComparison.InvariantCultureIgnoreCase))
+                && updateMessageText.StartsWith(MentionText, StringComparison.InvariantCultureIgnoreCase)
+                && updateMessageText.Length > MentionText.Length)
             {
                 var author = update.Message.From?.Username ??
                              update.Message.From?.FirstName + " " + update.Message.From?.LastName;
+                var updateMessageTextTrimmed = updateMessageText[MentionText.Length..];
 
-                var language = _rankedLanguageIdentifier.Identify(updateMessageText).FirstOrDefault();
+                var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
                 var template = language?.Item1?.Iso639_3 == "rus"
-                    ? ChatTemplateFactory.GetRussianTemplate(author, updateMessageText)
-                    : ChatTemplateFactory.GetEnglishTemplate(author, updateMessageText);
+                    ? ChatTemplateFactory.GetRussianTemplate(author, updateMessageTextTrimmed)
+                    : ChatTemplateFactory.GetEnglishTemplate(author, updateMessageTextTrimmed);
+
+                var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => updateMessageTextTrimmed.Contains(m));
 
                 var koboldResponse = await _koboldApi.Generate(new KoboldRequest
                 {
                     N = 1,
                     MaxContextLength = MaxTelegramMessageLength + template.Length,
-                    MaxLength = 140,
+                    MaxLength = isProgramRequest ? MaxProgrammingResponseLength : MaxUsualResponseLength,
                     RepPen = 1.2,
                     Temperature = 0.51,
                     TopP = 1,
@@ -102,7 +110,7 @@ public class TelegramBotService
                 else
                 {
                     if (!ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith(eos))
-                        && !ProgrammingMathMarkers.Any(pm => generatedResult.Contains(pm)))
+                        && !ProgrammingMathResponseMarkers.Any(pm => generatedResult.Contains(pm)))
                     {
                         // GPT couldn't complete the sentence, so we need to remove the incomplete sentence
                         var lastValidEndOfSentenceCharacter = generatedResult.LastIndexOfAny(ValidEndOfSentenceCharacters);
