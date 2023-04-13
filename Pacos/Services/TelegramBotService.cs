@@ -67,7 +67,8 @@ public class TelegramBotService
     {
         try
         {
-            if (update is { Type: UpdateType.Message, Message.Text: { } updateMessageText }
+            if (update is { Type: UpdateType.Message, Message: { Text: { } updateMessageText, ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null } }
+                && update.Message.IsAutomaticForward != true
                 && updateMessageText.StartsWith(MentionText, StringComparison.InvariantCultureIgnoreCase)
                 && updateMessageText.Length > MentionText.Length)
             {
