@@ -26,7 +26,7 @@ public class TelegramBotService
     private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
     private static readonly string[] Mentions = { "пакос,", "pacos," };
-    private static readonly Regex NewChatMessageWithNickRegex = new(@"\n\w{2,}:\s", RegexOptions.Compiled);
+    private static readonly Regex NewChatMessageWithNickRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
