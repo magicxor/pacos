@@ -24,11 +24,11 @@ public class TelegramBotService
     private const string DefaultUserNameEn = "User";
     private const string DefaultUserNameRu = "Пользователь";
     private const int MaxTelegramMessageLength = 4096;
-    private const int MaxUsualResponseLength = 80;
-    private const int MaxProgrammingResponseLength = 400;
-    private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
-    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
-    private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
+    private const int MaxUsualResponseLength = 100;
+    private const int MaxProgrammingResponseLength = 200;
+    private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…', ';' };
+    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "C++", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
+    private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "/>" };
     private static readonly string[] Mentions = { "пакос,", "pacos," };
     private static readonly Regex NewChatMessageWithNickRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -89,16 +89,23 @@ public class TelegramBotService
                 var koboldResponse = await _koboldApi.Generate(new KoboldRequest
                 {
                     N = 1,
+                    // MaxContextLength default = 1024
                     MaxContextLength = MaxTelegramMessageLength + template.Length,
+                    // MaxLength default = 80
                     MaxLength = isProgramRequest ? MaxProgrammingResponseLength : MaxUsualResponseLength,
+                    // rep_pen = 1.1 for 13b, 1.04 for 20b
                     RepPen = 1.2,
+                    // temperature = 0.59 for 13b, 0.6 for 20b
                     Temperature = 0.51,
+                    // top_p = 0.9 for 20b
                     TopP = 1,
                     TopK = 0,
                     TopA = 0,
                     Typical = 1,
+                    // tfs = 0.87 for 13b
                     Tfs = 0.99,
                     RepPenRange = 2048,
+                    // rep_pen_slope = 0.3 for 13b, 0.7 for 20b
                     RepPenSlope = 0,
                     SamplerOrder = new List<int> { 5, 0, 2, 3, 1, 4, 6 },
                     Quiet = true,
