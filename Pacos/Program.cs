@@ -8,6 +8,7 @@ using Pacos.Extensions;
 using Pacos.Models;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
+using Pacos.Services.HttpMessageHandlers;
 using Polly;
 using Polly.Extensions.Http;
 using Refit;
@@ -56,23 +57,16 @@ public class Program
                     .AddPolicyHandler(HttpRetryPolicy);
 
                 services.AddHttpClient(nameof(HttpClientTypes.Kobold))
+                    .AddHttpMessageHandler(() => new HttpKoboldHandler())
                     .ConfigureHttpClient(client => client.Timeout = KoboldApiTimeout);
 
                 var koboldApiAddress = hostContext.Configuration.GetKoboldApiAddress()
                                                 ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.KoboldApiAddressMissing);
                 services.AddScoped<IKoboldApi>(s =>
                 {
-                    /* todo: use IHttpClientFactory
                     var httpClient = s.GetRequiredService<IHttpClientFactory>()
                         .CreateClient(nameof(HttpClientTypes.Kobold));
                     httpClient.BaseAddress = new Uri(koboldApiAddress);
-                    */
-
-                    var httpClient = new HttpClient(new HttpLoggingHandler())
-                    {
-                        Timeout = KoboldApiTimeout,
-                        BaseAddress = new Uri(koboldApiAddress),
-                    };
 
                     var koboldApi = RestService.For<IKoboldApi>(httpClient,
                         new RefitSettings {
