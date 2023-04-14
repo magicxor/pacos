@@ -20,7 +20,7 @@ public class TelegramBotService
     private readonly IBackgroundTaskQueue _taskQueue;
 
     private const int MaxTelegramMessageLength = 4096;
-    private const int MaxUsualResponseLength = 140;
+    private const int MaxUsualResponseLength = 80;
     private const int MaxProgrammingResponseLength = 400;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
     private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
