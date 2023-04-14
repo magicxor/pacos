@@ -27,7 +27,7 @@ public class TelegramBotService
     private const int MaxUsualResponseLength = 100;
     private const int MaxProgrammingResponseLength = 200;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…', ';' };
-    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "C++", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
+    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "C++", "javascript", " js", "typescript", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "/>" };
     private static readonly string[] Mentions = { "пакос,", "pacos," };
     private static readonly Regex NewChatMessageWithNickRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
