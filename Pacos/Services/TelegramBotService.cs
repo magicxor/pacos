@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
+using Humanizer;
 using NTextCat;
 using Pacos.Extensions;
 using Pacos.Models;
@@ -81,6 +83,7 @@ public class TelegramBotService
 
                 var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => updateMessageTextTrimmed.Contains(m));
 
+                var stopwatch = Stopwatch.StartNew();
                 var koboldResponse = await _koboldApi.Generate(new KoboldRequest
                 {
                     N = 1,
@@ -99,6 +102,7 @@ public class TelegramBotService
                     Quiet = true,
                     Prompt = template,
                 }, cancellationToken);
+                stopwatch.Stop();
 
                 var generatedResult = koboldResponse.Results?.FirstOrDefault()?.Text ?? "Error: kobold response is empty";
 
@@ -123,7 +127,7 @@ public class TelegramBotService
                     }
                 }
 
-                _logger.LogInformation("Response: {generatedResult}", generatedResult);
+                _logger.LogInformation("Response ({elapsed}): {generatedResult}", stopwatch.Elapsed.Humanize(), generatedResult);
 
                 await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id),
                     generatedResult.Cut(MaxTelegramMessageLength, "empty"),
