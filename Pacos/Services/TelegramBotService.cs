@@ -21,13 +21,13 @@ public class TelegramBotService
     private readonly IKoboldApi _koboldApi;
     private readonly IBackgroundTaskQueue _taskQueue;
 
-    private const string MentionText = "пакос,";
     private const int MaxTelegramMessageLength = 4096;
     private const int MaxUsualResponseLength = 140;
     private const int MaxProgrammingResponseLength = 400;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…' };
     private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html", " программу ", " код " };
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "=", "+", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "yml", "yaml", "json", "xml", "html" };
+    private static readonly string[] Mentions = { "пакос,", "pacos," };
     private static readonly Regex NewChatMessageWithNickRegex = new(@"\n\w+:\s", RegexOptions.Compiled);
 
     private static readonly ReceiverOptions ReceiverOptions = new()
@@ -69,14 +69,14 @@ public class TelegramBotService
         {
             if (update is { Type: UpdateType.Message, Message: { Text: { } updateMessageText, ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null } }
                 && update.Message.IsAutomaticForward != true
-                && updateMessageText.StartsWith(MentionText, StringComparison.InvariantCultureIgnoreCase)
-                && updateMessageText.Length > MentionText.Length)
+                && Mentions.FirstOrDefault(m => updateMessageText.StartsWith(m, StringComparison.InvariantCultureIgnoreCase)) is { } mentionText
+                && updateMessageText.Length > mentionText.Length)
             {
                 var author = update.Message.From?.Username ??
                              update.Message.From?.FirstName + " " + update.Message.From?.LastName;
-                var updateMessageTextTrimmed = updateMessageText[MentionText.Length..].Trim();
+                var updateMessageTextTrimmed = updateMessageText[mentionText.Length..].Trim();
 
-                _logger.LogInformation("New prompt {updateMessageTextTrimmed} from {author}", updateMessageTextTrimmed, author);
+                _logger.LogInformation("New prompt from {author}: ({updateMessageTextTrimmed})", author, updateMessageTextTrimmed);
 
                 var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
                 var template = language?.Item1?.Iso639_3 == "rus"
@@ -127,7 +127,7 @@ public class TelegramBotService
                     }
                 }
 
-                _logger.LogInformation("Response {generatedResult}", generatedResult);
+                _logger.LogInformation("Response: {generatedResult}", generatedResult);
 
                 await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id),
                     generatedResult.Cut(MaxTelegramMessageLength, "empty"),
