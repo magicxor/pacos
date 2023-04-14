@@ -21,7 +21,8 @@ public class TelegramBotService
     private readonly IKoboldApi _koboldApi;
     private readonly IBackgroundTaskQueue _taskQueue;
 
-    private const string DefaultUserName = "User";
+    private const string DefaultUserNameEn = "User";
+    private const string DefaultUserNameRu = "Пользователь";
     private const int MaxTelegramMessageLength = 4096;
     private const int MaxUsualResponseLength = 80;
     private const int MaxProgrammingResponseLength = 400;
@@ -79,8 +80,8 @@ public class TelegramBotService
 
                 var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
                 var template = language?.Item1?.Iso639_3 == "rus"
-                    ? ChatTemplateFactory.GetRussianTemplate(DefaultUserName, updateMessageTextTrimmed)
-                    : ChatTemplateFactory.GetEnglishTemplate(DefaultUserName, updateMessageTextTrimmed);
+                    ? ChatTemplateFactory.GetRussianTemplate(DefaultUserNameRu, updateMessageTextTrimmed)
+                    : ChatTemplateFactory.GetEnglishTemplate(DefaultUserNameEn, updateMessageTextTrimmed);
 
                 var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => updateMessageTextTrimmed.Contains(m));
 
