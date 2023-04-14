@@ -1,6 +1,10 @@
 # pacos
 A telegram [bot](https://github.com/TelegramBots/Telegram.Bot) working as a frontend for [koboldcpp](https://github.com/LostRuins/koboldcpp)
 
+*The alpaca was scientifically described by Carl Linnaeus in his System of Nature (1758) under the Latin name Camelus pacos.*
+
+![scr1](https://user-images.githubusercontent.com/8275793/231939658-5b52f5c3-2dba-4313-9756-4d8b16d14627.jpg)
+
 # Models
 - [IlyaGusev/llama_13b_ru_turbo_alpaca_lora_llamacpp](https://huggingface.co/spaces/IlyaGusev/llama_13b_ru_turbo_alpaca_lora_llamacpp)
 - [IlyaGusev/llama_7b_ru_turbo_alpaca_lora_llamacpp](https://huggingface.co/spaces/IlyaGusev/llama_7b_ru_turbo_alpaca_lora_llamacpp)
