@@ -72,7 +72,7 @@ public class TelegramBotService
                              update.Message.From?.FirstName + " " + update.Message.From?.LastName;
                 var updateMessageTextTrimmed = updateMessageText[mentionText.Length..].Trim();
 
-                _logger.LogInformation("New prompt from {author}: ({updateMessageTextTrimmed})", author, updateMessageTextTrimmed);
+                _logger.LogInformation("New prompt from {author}: {updateMessageTextTrimmed}", author, updateMessageTextTrimmed);
 
                 var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
                 var template = language?.Item1?.Iso639_3 == "rus"
