@@ -15,6 +15,9 @@ FROM build AS publish
 RUN dotnet publish "Pacos.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+ENV DOTNET_ENVIRONMENT="Production"
+ENV Pacos__TelegramBotApiKey=""
+ENV Pacos__KoboldApiAddress=""
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Pacos.dll"]

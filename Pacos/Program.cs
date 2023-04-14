@@ -20,9 +20,12 @@ public class Program
 {
     private static readonly IAsyncPolicy<HttpResponseMessage> HttpRetryPolicy = HttpPolicyExtensions
         .HandleTransientHttpError()
-        .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(retryAttempt * 1.5));
+        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(retryAttempt * 1.5));
 
     private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration("nlog.config");
+
+    private static readonly TimeSpan KoboldApiTimeout = TimeSpan.FromMinutes(10);
+    private const int BackgroundTaskQueueCapacity = 100;
 
     public static void Main(string[] args)
     {
@@ -31,6 +34,10 @@ public class Program
         try
         {
             var host = Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((_, configBuilder) =>
+            {
+                configBuilder.AddEnvironmentVariables();
+            })
             .ConfigureLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();
@@ -49,32 +56,28 @@ public class Program
                     .AddPolicyHandler(HttpRetryPolicy);
 
                 services.AddHttpClient(nameof(HttpClientTypes.Kobold))
-                    .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromMinutes(10));
+                    .ConfigureHttpClient(client => client.Timeout = KoboldApiTimeout);
 
                 var koboldApiAddress = hostContext.Configuration.GetKoboldApiAddress()
                                                 ?? throw new ServiceException(LocalizationKeys.Errors.Configuration.KoboldApiAddressMissing);
                 services.AddScoped<IKoboldApi>(s =>
                 {
-                    /*
+                    /* todo: use IHttpClientFactory
                     var httpClient = s.GetRequiredService<IHttpClientFactory>()
                         .CreateClient(nameof(HttpClientTypes.Kobold));
                     httpClient.BaseAddress = new Uri(koboldApiAddress);
                     */
 
-
-                        var httpClient = new HttpClient(new HttpLoggingHandler())
-                        {
-                            Timeout = TimeSpan.FromMinutes(10),
-                            BaseAddress = new Uri(koboldApiAddress),
-                        };
-
+                    var httpClient = new HttpClient(new HttpLoggingHandler())
+                    {
+                        Timeout = KoboldApiTimeout,
+                        BaseAddress = new Uri(koboldApiAddress),
+                    };
 
                     var koboldApi = RestService.For<IKoboldApi>(httpClient,
                         new RefitSettings {
                             ContentSerializer = new SystemTextJsonContentSerializer(),
                         });
-
-                    // koboldApi.Client.Timeout = TimeSpan.FromMinutes(5);
 
                     return koboldApi;
                 });
@@ -86,7 +89,7 @@ public class Program
                         .CreateClient(nameof(HttpClientTypes.Telegram))));
 
                 services.AddHostedService<QueuedHostedService>();
-                services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(100));
+                services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
 
                 services.AddScoped<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load("Core14.profile.xml"));
                 services.AddScoped<TelegramBotService>();
