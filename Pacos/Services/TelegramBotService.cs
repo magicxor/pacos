@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using Microsoft.Extensions.Options;
 using NTextCat;
 using Pacos.Extensions;
 using Pacos.Models;
@@ -15,7 +14,6 @@ namespace Pacos.Services;
 public class TelegramBotService
 {
     private readonly ILogger<TelegramBotService> _logger;
-    private readonly PacosOptions _options;
     private readonly ITelegramBotClient _telegramBotClient;
     private readonly RankedLanguageIdentifier _rankedLanguageIdentifier;
     private readonly IKoboldApi _koboldApi;
@@ -37,14 +35,12 @@ public class TelegramBotService
     };
 
     public TelegramBotService(ILogger<TelegramBotService> logger,
-        IOptions<PacosOptions> options,
         ITelegramBotClient telegramBotClient,
         RankedLanguageIdentifier rankedLanguageIdentifier,
         IKoboldApi koboldApi,
         IBackgroundTaskQueue taskQueue)
     {
         _logger = logger;
-        _options = options.Value;
         _telegramBotClient = telegramBotClient;
         _rankedLanguageIdentifier = rankedLanguageIdentifier;
         _koboldApi = koboldApi;

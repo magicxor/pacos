@@ -1,5 +1,4 @@
 ﻿using Refit;
-using Telegram.Bot.Types;
 
 namespace Pacos.Models;
 

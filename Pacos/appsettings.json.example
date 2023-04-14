@@ -1,7 +1,6 @@
 {
   "Pacos": {
     "TelegramBotApiKey": "3442342342:ABCDEFG",
-    "BotOwnerUserId": 8800555,
     "KoboldApiAddress": "http://127.0.0.1:5027"
   }
 }
