@@ -152,8 +152,7 @@ public class TelegramBotService
                 && Mentions.FirstOrDefault(m => updateMessageText.StartsWith(m, StringComparison.InvariantCultureIgnoreCase)) is { } mentionText
                 && updateMessageText.Length > mentionText.Length)
             {
-                var author = update.Message.From.Username ??
-                             update.Message.From.FirstName + " " + update.Message.From.LastName;
+                var author = update.Message.From.Username ?? string.Join(' ', update.Message.From.FirstName, update.Message.From.LastName);
                 var message = updateMessageText[mentionText.Length..].Trim();
 
                 var (messageType, messageTextTrimmed) = message switch
