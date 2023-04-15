@@ -21,27 +21,27 @@ public class Chat13BPreset : BasePresetFactory
     public override KoboldRequest CreateRequestData(string prompt,
         int responseTokens = MaxUsualResponseTokens)
     {
-        // ouroboros 13b
+        // Basic Coherence 13B
         return new KoboldRequest
         {
             N = 1,
             MaxContextLength = LLaMaContextTokens,
             MaxLength = responseTokens,
-            RepPen = 1.05m,
-            Temperature = 1.07m,
-            TopP = 1m,
-            TopK = 100,
+            RepPen = 1.1m,
+            Temperature = 0.59m,
+            TopP = 0.9m,
+            TopK = 0,
             TopA = 0,
             Typical = 1,
-            Tfs = 0.93m,
-            RepPenRange = 404,
-            RepPenSlope = 0.8m,
+            Tfs = 0.87m,
+            RepPenRange = 2048,
+            RepPenSlope = 0.3m,
             SamplerOrder = new List<int>
             {
-                0,
                 5,
-                3,
+                0,
                 2,
+                3,
                 1,
                 4,
                 6,

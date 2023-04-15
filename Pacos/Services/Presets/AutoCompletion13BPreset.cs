@@ -21,7 +21,7 @@ public class AutoCompletion13BPreset : BasePresetFactory
     public override KoboldRequest CreateRequestData(string prompt,
         int responseTokens = MaxUsualResponseTokens)
     {
-        // basic coherence 13b with low temperature
+        // Basic Coherence 13B with low temperature
         return new KoboldRequest
         {
             N = 1,

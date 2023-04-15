@@ -4,46 +4,46 @@ using Pacos.Services.Prompts;
 
 namespace Pacos.Services.Presets;
 
-public class Instruction20BPreset : BasePresetFactory
+public class ChatOuroboros13BPreset : BasePresetFactory
 {
-    private readonly InstructionPromptFactory _instructionPromptFactory;
+    private readonly ChatPromptFactory _chatPromptFactory;
 
-    public Instruction20BPreset(InstructionPromptFactory instructionPromptFactory)
+    public ChatOuroboros13BPreset(ChatPromptFactory chatPromptFactory)
     {
-        _instructionPromptFactory = instructionPromptFactory;
+        _chatPromptFactory = chatPromptFactory;
     }
 
     public override PromptResult CreatePrompt(PromptRequest promptRequest)
     {
-        return _instructionPromptFactory.CreatePrompt(promptRequest);
+        return _chatPromptFactory.CreatePrompt(promptRequest);
     }
 
     public override KoboldRequest CreateRequestData(string prompt,
         int responseTokens = MaxUsualResponseTokens)
     {
-        // Default 20B
+        // Ouroboros 13B
         return new KoboldRequest
         {
             N = 1,
             MaxContextLength = LLaMaContextTokens,
             MaxLength = responseTokens,
-            RepPen = 1.04m,
-            Temperature = 0.6m,
-            TopP = 0.9m,
-            TopK = 0,
+            RepPen = 1.05m,
+            Temperature = 1.07m,
+            TopP = 1m,
+            TopK = 100,
             TopA = 0,
             Typical = 1,
-            Tfs = 1m,
-            RepPenRange = 1024,
-            RepPenSlope = 0.7m,
+            Tfs = 0.93m,
+            RepPenRange = 404,
+            RepPenSlope = 0.8m,
             SamplerOrder = new List<int>
             {
                 0,
-                1,
-                2,
-                3,
-                4,
                 5,
+                3,
+                2,
+                1,
+                4,
                 6,
             },
             Quiet = true,
