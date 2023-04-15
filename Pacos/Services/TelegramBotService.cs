@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text.RegularExpressions;
 using Humanizer;
 using NTextCat;
 using Pacos.Enums;
@@ -28,14 +27,10 @@ public class TelegramBotService
     private readonly Instruction20BPreset _instruction20BPreset;
 
     private const int MaxTelegramMessageLength = 4096;
-    private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…', ';' };
     private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "C++", "javascript", " js", "typescript", "yml", "yaml", "json", "xml", "html", " программу ", " код ", "code snippet" };
-    // can't use #, /*, // because they sometimes occur in normal output too
-    private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "/>" };
     private static readonly string[] Mentions = { "пакос,", "pacos," };
     private const string AutoCompletionMarker = "!complete";
     private const string InstructionMarker = "!";
-    private static readonly Regex StartOfNewMessageRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -77,7 +72,6 @@ public class TelegramBotService
         IReadOnlyCollection<ContextItem> context,
         ContextItem newContextItem)
     {
-
         var promptResult = _autoCompletion13BPreset.CreatePrompt(
             new PromptRequest(languageCode,
                 context,
@@ -98,7 +92,6 @@ public class TelegramBotService
         IReadOnlyCollection<ContextItem> context,
         ContextItem newContextItem)
     {
-
         var promptResult = _chat13BPreset.CreatePrompt(
             new PromptRequest(languageCode,
                 context,
@@ -119,7 +112,6 @@ public class TelegramBotService
         IReadOnlyCollection<ContextItem> context,
         ContextItem newContextItem)
     {
-
         var promptResult = _instruction20BPreset.CreatePrompt(
             new PromptRequest(languageCode,
                 context,
@@ -162,34 +154,28 @@ public class TelegramBotService
             {
                 var author = update.Message.From.Username ??
                              update.Message.From.FirstName + " " + update.Message.From.LastName;
-                var updateMessageTextTrimmed = updateMessageText[mentionText.Length..].Trim();
+                var message = updateMessageText[mentionText.Length..].Trim();
 
-                var userMessageType = updateMessageTextTrimmed switch
+                var (messageType, messageTextTrimmed) = message switch
                 {
-                    string when updateMessageTextTrimmed.StartsWith(AutoCompletionMarker, StringComparison.InvariantCultureIgnoreCase)
-                                && updateMessageTextTrimmed.Length > AutoCompletionMarker.Length => UserMessageTypes.AutoCompletion,
-                    string when updateMessageTextTrimmed.StartsWith(InstructionMarker, StringComparison.InvariantCultureIgnoreCase)
-                                && updateMessageTextTrimmed.Length > InstructionMarker.Length => UserMessageTypes.Instruction,
-                    _ => UserMessageTypes.Normal,
-                };
-                updateMessageTextTrimmed = userMessageType switch
-                {
-                    UserMessageTypes.AutoCompletion => updateMessageTextTrimmed[AutoCompletionMarker.Length..].Trim(),
-                    UserMessageTypes.Instruction => updateMessageTextTrimmed[InstructionMarker.Length..].Trim(),
-                    _ => updateMessageTextTrimmed,
+                    string when message.StartsWith(AutoCompletionMarker, StringComparison.InvariantCultureIgnoreCase)
+                                && message.Length > AutoCompletionMarker.Length => (UserMessageTypes.AutoCompletion, message[AutoCompletionMarker.Length..].Trim()),
+                    string when message.StartsWith(InstructionMarker, StringComparison.InvariantCultureIgnoreCase)
+                                && message.Length > InstructionMarker.Length => (UserMessageTypes.Instruction, message[InstructionMarker.Length..].Trim()),
+                    _ => (UserMessageTypes.Normal, message),
                 };
 
-                var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
+                var language = _rankedLanguageIdentifier.Identify(messageTextTrimmed).FirstOrDefault();
                 var languageCode = language?.Item1?.Iso639_3 ?? "eng";
 
                 _logger.LogInformation("Processing the prompt from {author} (lang={languageCode}, type={userMessageType}): {updateMessageTextTrimmed}",
-                    author, languageCode, userMessageType, updateMessageTextTrimmed);
+                    author, languageCode, messageType, messageTextTrimmed);
 
                 var (promptResult, koboldRequest) = UsePreset(
-                    userMessageType,
+                    messageType,
                     languageCode,
                     Array.Empty<ContextItem>(),
-                    new ContextItem(update.Message.From.Id, author, updateMessageTextTrimmed));
+                    new ContextItem(update.Message.From.Id, author, messageTextTrimmed));
 
                 var stopwatch = Stopwatch.StartNew();
                 var koboldResponse = await _koboldApi.Generate(koboldRequest, cancellationToken);
@@ -197,34 +183,7 @@ public class TelegramBotService
 
                 var generatedResult = koboldResponse.Results?.FirstOrDefault()?.Text ?? "Error: kobold response is empty";
 
-                var startOfNewMessageMatch = StartOfNewMessageRegex.Match(generatedResult);
-
-                if (startOfNewMessageMatch.Success)
-                {
-                    // GPT thinks up the following dialogue, so we need to remove it
-                    generatedResult = generatedResult[..startOfNewMessageMatch.Index];
-                }
-                else
-                {
-                    if (!ProgrammingMathResponseMarkers.Any(pm => generatedResult.Contains(pm)))
-                    {
-                        // it's not a code snippet, so we can trim the output using various rules
-                        generatedResult = generatedResult.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
-                        generatedResult = generatedResult.Split("\r\n\r\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
-                        generatedResult = generatedResult.Split("/*", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
-
-                        if (!ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith(eos))
-                            && !ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith($"{eos})")))
-                        {
-                            // GPT couldn't complete the sentence, so we need to remove the incomplete sentence
-                            var lastValidEndOfSentenceCharacter = generatedResult.LastIndexOfAny(ValidEndOfSentenceCharacters);
-                            if (lastValidEndOfSentenceCharacter >= 0)
-                            {
-                                generatedResult = generatedResult[..(lastValidEndOfSentenceCharacter + 1)];
-                            }
-                        }
-                    }
-                }
+                generatedResult = OutputTransformation.Transform(generatedResult);
 
                 _logger.LogInformation("Response ({elapsed}): {generatedResult}", stopwatch.Elapsed.Humanize(), generatedResult);
 
