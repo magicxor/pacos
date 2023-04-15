@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Pacos.Models;
+namespace Pacos.Models.KoboldApi;
 
 public class KoboldRequest
 {
@@ -14,13 +14,13 @@ public class KoboldRequest
     public int MaxLength { get; set; }
 
     [JsonPropertyName("rep_pen")]
-    public double RepPen { get; set; }
+    public decimal RepPen { get; set; }
 
     [JsonPropertyName("temperature")]
-    public double Temperature { get; set; }
+    public decimal Temperature { get; set; }
 
     [JsonPropertyName("top_p")]
-    public int TopP { get; set; }
+    public decimal TopP { get; set; }
 
     [JsonPropertyName("top_k")]
     public int TopK { get; set; }
@@ -32,13 +32,13 @@ public class KoboldRequest
     public int Typical { get; set; }
 
     [JsonPropertyName("tfs")]
-    public double Tfs { get; set; }
+    public decimal Tfs { get; set; }
 
     [JsonPropertyName("rep_pen_range")]
     public int RepPenRange { get; set; }
 
     [JsonPropertyName("rep_pen_slope")]
-    public int RepPenSlope { get; set; }
+    public decimal RepPenSlope { get; set; }
 
     [JsonPropertyName("sampler_order")]
     public List<int>? SamplerOrder { get; set; }

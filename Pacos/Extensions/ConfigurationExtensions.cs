@@ -1,5 +1,5 @@
 ﻿using Pacos.Enums;
-using Pacos.Models;
+using Pacos.Models.Options;
 
 namespace Pacos.Extensions;
 

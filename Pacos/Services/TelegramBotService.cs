@@ -2,9 +2,12 @@
 using System.Text.RegularExpressions;
 using Humanizer;
 using NTextCat;
+using Pacos.Enums;
 using Pacos.Extensions;
-using Pacos.Models;
+using Pacos.Models.Domain;
+using Pacos.Models.KoboldApi;
 using Pacos.Services.BackgroundTasks;
+using Pacos.Services.Presets;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -20,17 +23,19 @@ public class TelegramBotService
     private readonly RankedLanguageIdentifier _rankedLanguageIdentifier;
     private readonly IKoboldApi _koboldApi;
     private readonly IBackgroundTaskQueue _taskQueue;
+    private readonly AutoCompletion13BPreset _autoCompletion13BPreset;
+    private readonly Chat13BPreset _chat13BPreset;
+    private readonly Instruction20BPreset _instruction20BPreset;
 
-    private const string DefaultUserNameEn = "User";
-    private const string DefaultUserNameRu = "Пользователь";
     private const int MaxTelegramMessageLength = 4096;
-    private const int MaxUsualResponseLength = 100;
-    private const int MaxProgrammingResponseLength = 200;
     private static readonly char[] ValidEndOfSentenceCharacters = { '.', '!', '?', '…', ';' };
     private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "C++", "javascript", " js", "typescript", "yml", "yaml", "json", "xml", "html", " программу ", " код ", "code snippet" };
+    // can't use #, /*, // because they sometimes occur in normal output too
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "/>" };
     private static readonly string[] Mentions = { "пакос,", "pacos," };
-    private static readonly Regex NewChatMessageWithNickRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private const string AutoCompletionMarker = "!continue";
+    private const string InstructionMarker = "!";
+    private static readonly Regex StartOfNewMessageRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -42,13 +47,19 @@ public class TelegramBotService
         ITelegramBotClient telegramBotClient,
         RankedLanguageIdentifier rankedLanguageIdentifier,
         IKoboldApi koboldApi,
-        IBackgroundTaskQueue taskQueue)
+        IBackgroundTaskQueue taskQueue,
+        AutoCompletion13BPreset autoCompletion13BPreset,
+        Chat13BPreset chat13BPreset,
+        Instruction20BPreset instruction20BPreset)
     {
         _logger = logger;
         _telegramBotClient = telegramBotClient;
         _rankedLanguageIdentifier = rankedLanguageIdentifier;
         _koboldApi = koboldApi;
         _taskQueue = taskQueue;
+        _autoCompletion13BPreset = autoCompletion13BPreset;
+        _chat13BPreset = chat13BPreset;
+        _instruction20BPreset = instruction20BPreset;
     }
 
     private async Task HandleUpdateAsync(ITelegramBotClient botClient,
@@ -61,77 +72,156 @@ public class TelegramBotService
             await HandleUpdateFunction(botClient, update, cancellationToken));
     }
 
+    private (PromptResult promptResult, KoboldRequest koboldRequest) UseAutoCompletionPreset(
+        string languageCode,
+        IReadOnlyCollection<ContextItem> context,
+        ContextItem newContextItem)
+    {
+
+        var promptResult = _autoCompletion13BPreset.CreatePrompt(
+            new PromptRequest(languageCode,
+                context,
+                newContextItem));
+
+        var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
+        var maxResponseTokens = isProgramRequest
+            ? BasePresetFactory.MaxProgrammingResponseTokens
+            : BasePresetFactory.MaxUsualResponseTokens;
+
+        var koboldRequest = _autoCompletion13BPreset.CreateRequestData(promptResult.Prompt, maxResponseTokens);
+
+        return (promptResult, koboldRequest);
+    }
+
+    private (PromptResult promptResult, KoboldRequest koboldRequest) UseChatPreset(
+        string languageCode,
+        IReadOnlyCollection<ContextItem> context,
+        ContextItem newContextItem)
+    {
+
+        var promptResult = _chat13BPreset.CreatePrompt(
+            new PromptRequest(languageCode,
+                context,
+                newContextItem));
+
+        var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
+        var maxResponseTokens = isProgramRequest
+            ? BasePresetFactory.MaxProgrammingResponseTokens
+            : BasePresetFactory.MaxUsualResponseTokens;
+
+        var koboldRequest = _chat13BPreset.CreateRequestData(promptResult.Prompt, maxResponseTokens);
+
+        return (promptResult, koboldRequest);
+    }
+
+    private (PromptResult promptResult, KoboldRequest koboldRequest) UseInstructionPreset(
+        string languageCode,
+        IReadOnlyCollection<ContextItem> context,
+        ContextItem newContextItem)
+    {
+
+        var promptResult = _instruction20BPreset.CreatePrompt(
+            new PromptRequest(languageCode,
+                context,
+                newContextItem));
+
+        var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
+        var maxResponseTokens = isProgramRequest
+            ? BasePresetFactory.MaxProgrammingResponseTokens
+            : BasePresetFactory.MaxUsualResponseTokens;
+
+        var koboldRequest = _instruction20BPreset.CreateRequestData(promptResult.Prompt, maxResponseTokens);
+
+        return (promptResult, koboldRequest);
+    }
+
+    private (PromptResult promptResult, KoboldRequest koboldRequest) UsePreset(
+        UserMessageTypes userMessageType,
+        string languageCode,
+        IReadOnlyCollection<ContextItem> context,
+        ContextItem newContextItem)
+    {
+        return userMessageType switch
+        {
+            UserMessageTypes.AutoCompletion => UseAutoCompletionPreset(languageCode, context, newContextItem),
+            UserMessageTypes.Instruction => UseInstructionPreset(languageCode, context, newContextItem),
+            _ => UseChatPreset(languageCode, context, newContextItem),
+        };
+    }
+
     private async Task HandleUpdateFunction(ITelegramBotClient botClient,
         Update update,
         CancellationToken cancellationToken)
     {
         try
         {
-            if (update is { Type: UpdateType.Message, Message: { Text: { } updateMessageText, ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null } }
+            if (update is { Type: UpdateType.Message, Message: { Text: { } updateMessageText, ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null, From: not null } }
                 && update.Message.IsAutomaticForward != true
                 && Mentions.FirstOrDefault(m => updateMessageText.StartsWith(m, StringComparison.InvariantCultureIgnoreCase)) is { } mentionText
                 && updateMessageText.Length > mentionText.Length)
             {
-                var author = update.Message.From?.Username ??
-                             update.Message.From?.FirstName + " " + update.Message.From?.LastName;
+                var author = update.Message.From.Username ??
+                             update.Message.From.FirstName + " " + update.Message.From.LastName;
                 var updateMessageTextTrimmed = updateMessageText[mentionText.Length..].Trim();
 
-                _logger.LogInformation("New prompt from {author}: {updateMessageTextTrimmed}", author, updateMessageTextTrimmed);
+                var userMessageType = updateMessageTextTrimmed switch
+                {
+                    string when updateMessageTextTrimmed.StartsWith(AutoCompletionMarker, StringComparison.InvariantCultureIgnoreCase)
+                                && updateMessageTextTrimmed.Length > AutoCompletionMarker.Length => UserMessageTypes.AutoCompletion,
+                    string when updateMessageTextTrimmed.StartsWith(InstructionMarker, StringComparison.InvariantCultureIgnoreCase)
+                                && updateMessageTextTrimmed.Length > InstructionMarker.Length => UserMessageTypes.Instruction,
+                    _ => UserMessageTypes.Normal,
+                };
+                updateMessageTextTrimmed = userMessageType switch
+                {
+                    UserMessageTypes.AutoCompletion => updateMessageTextTrimmed[AutoCompletionMarker.Length..].Trim(),
+                    UserMessageTypes.Instruction => updateMessageTextTrimmed[InstructionMarker.Length..].Trim(),
+                    _ => updateMessageTextTrimmed,
+                };
 
                 var language = _rankedLanguageIdentifier.Identify(updateMessageTextTrimmed).FirstOrDefault();
-                var template = language?.Item1?.Iso639_3 == "rus"
-                    ? ChatTemplateFactory.GetRussianTemplate(DefaultUserNameRu, updateMessageTextTrimmed)
-                    : ChatTemplateFactory.GetEnglishTemplate(DefaultUserNameEn, updateMessageTextTrimmed);
+                var languageCode = language?.Item1?.Iso639_3 ?? "eng";
 
-                var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => updateMessageTextTrimmed.Contains(m));
+                _logger.LogInformation("Processing the prompt from {author} (lang={languageCode}, type={userMessageType}): {updateMessageTextTrimmed}",
+                    author, languageCode, userMessageType, updateMessageTextTrimmed);
+
+                var (promptResult, koboldRequest) = UsePreset(
+                    userMessageType,
+                    languageCode,
+                    Array.Empty<ContextItem>(),
+                    new ContextItem(update.Message.From.Id, author, updateMessageTextTrimmed));
 
                 var stopwatch = Stopwatch.StartNew();
-                var koboldResponse = await _koboldApi.Generate(new KoboldRequest
-                {
-                    N = 1,
-                    // MaxContextLength default = 1024
-                    MaxContextLength = MaxTelegramMessageLength + template.Length,
-                    // MaxLength default = 80
-                    MaxLength = isProgramRequest ? MaxProgrammingResponseLength : MaxUsualResponseLength,
-                    // rep_pen = 1.1 for 13b, 1.04 for 20b
-                    RepPen = 1.2,
-                    // temperature = 0.59 for 13b, 0.6 for 20b
-                    Temperature = 0.51,
-                    // top_p = 0.9 for 20b
-                    TopP = 1,
-                    TopK = 0,
-                    TopA = 0,
-                    Typical = 1,
-                    // tfs = 0.87 for 13b
-                    Tfs = 0.99,
-                    RepPenRange = 2048,
-                    // rep_pen_slope = 0.3 for 13b, 0.7 for 20b
-                    RepPenSlope = 0,
-                    SamplerOrder = new List<int> { 5, 0, 2, 3, 1, 4, 6 },
-                    Quiet = true,
-                    Prompt = template,
-                }, cancellationToken);
+                var koboldResponse = await _koboldApi.Generate(koboldRequest, cancellationToken);
                 stopwatch.Stop();
 
                 var generatedResult = koboldResponse.Results?.FirstOrDefault()?.Text ?? "Error: kobold response is empty";
 
-                var newChatMessageWithNickMatch = NewChatMessageWithNickRegex.Match(generatedResult);
+                var startOfNewMessageMatch = StartOfNewMessageRegex.Match(generatedResult);
 
-                if (newChatMessageWithNickMatch.Success)
+                if (startOfNewMessageMatch.Success)
                 {
                     // GPT thinks up the following dialogue, so we need to remove it
-                    generatedResult = generatedResult[..newChatMessageWithNickMatch.Index];
+                    generatedResult = generatedResult[..startOfNewMessageMatch.Index];
                 }
                 else
                 {
-                    if (!ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith(eos))
-                        && !ProgrammingMathResponseMarkers.Any(pm => generatedResult.Contains(pm)))
+                    if (!ProgrammingMathResponseMarkers.Any(pm => generatedResult.Contains(pm)))
                     {
-                        // GPT couldn't complete the sentence, so we need to remove the incomplete sentence
-                        var lastValidEndOfSentenceCharacter = generatedResult.LastIndexOfAny(ValidEndOfSentenceCharacters);
-                        if (lastValidEndOfSentenceCharacter >= 0)
+                        // it's not a code snippet, so we can trim the output using various rules
+                        generatedResult = generatedResult.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
+                        generatedResult = generatedResult.Split("\r\n\r\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
+                        generatedResult = generatedResult.Split("/*", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
+
+                        if (!ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith(eos))
+                            && !ValidEndOfSentenceCharacters.Any(eos => generatedResult.EndsWith($"{eos})")))
                         {
-                            generatedResult = generatedResult[..(lastValidEndOfSentenceCharacter + 1)];
+                            // GPT couldn't complete the sentence, so we need to remove the incomplete sentence
+                            var lastValidEndOfSentenceCharacter = generatedResult.LastIndexOfAny(ValidEndOfSentenceCharacters);
+                            if (lastValidEndOfSentenceCharacter >= 0)
+                            {
+                                generatedResult = generatedResult[..(lastValidEndOfSentenceCharacter + 1)];
+                            }
                         }
                     }
                 }

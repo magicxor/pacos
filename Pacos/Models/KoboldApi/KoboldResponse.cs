@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Pacos.Models;
+namespace Pacos.Models.KoboldApi;
 
 public class Result
 {

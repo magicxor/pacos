@@ -1,6 +1,6 @@
 ﻿using Refit;
 
-namespace Pacos.Models;
+namespace Pacos.Models.KoboldApi;
 
 public interface IKoboldApi
 {
