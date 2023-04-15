@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Pacos.Models;
+namespace Pacos.Models.Options;
 
 public class PacosOptions
 {

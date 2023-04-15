@@ -5,10 +5,13 @@ using NTextCat;
 using Pacos.Enums;
 using Pacos.Exceptions;
 using Pacos.Extensions;
-using Pacos.Models;
+using Pacos.Models.KoboldApi;
+using Pacos.Models.Options;
 using Pacos.Services;
 using Pacos.Services.BackgroundTasks;
 using Pacos.Services.HttpMessageHandlers;
+using Pacos.Services.Presets;
+using Pacos.Services.Prompts;
 using Polly;
 using Polly.Extensions.Http;
 using Refit;
@@ -86,6 +89,15 @@ public class Program
                 services.AddSingleton<IBackgroundTaskQueue>(_ => new BackgroundTaskQueue(BackgroundTaskQueueCapacity));
 
                 services.AddScoped<RankedLanguageIdentifier>(_ => new RankedLanguageIdentifierFactory().Load("Core14.profile.xml"));
+
+                services.AddScoped<AutoCompletionPromptFactory>();
+                services.AddScoped<ChatPromptFactory>();
+                services.AddScoped<InstructionPromptFactory>();
+
+                services.AddScoped<AutoCompletion13BPreset>();
+                services.AddScoped<Chat13BPreset>();
+                services.AddScoped<Instruction20BPreset>();
+
                 services.AddScoped<TelegramBotService>();
 
                 services.AddHostedService<Worker>();
