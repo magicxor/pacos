@@ -28,8 +28,8 @@ public static class OutputTransformation
             if (!ProgrammingMathResponseMarkers.Any(pm => generatedResult.Contains(pm)))
             {
                 // it's not a code snippet, so we can clean the output using various rules
-                generatedResult = generatedResult.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
-                generatedResult = generatedResult.Split("\r\n\r\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
+                generatedResult = generatedResult.Split("\n\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
+                generatedResult = generatedResult.Split("\r\n\r\n\r\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
                 generatedResult = generatedResult.Split("/*", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
                 generatedResult = generatedResult.Split("\n#", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).First();
                 generatedResult = generatedResult.Replace("<br>", " ");
