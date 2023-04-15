@@ -33,7 +33,7 @@ public class TelegramBotService
     // can't use #, /*, // because they sometimes occur in normal output too
     private static readonly string[] ProgrammingMathResponseMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "/>" };
     private static readonly string[] Mentions = { "пакос,", "pacos," };
-    private const string AutoCompletionMarker = "!continue";
+    private const string AutoCompletionMarker = "!complete";
     private const string InstructionMarker = "!";
     private static readonly Regex StartOfNewMessageRegex = new(@"\n((?!question|answer)\w{2,}):\s", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
