@@ -10,7 +10,7 @@ public abstract class BasePresetFactory
     // but you can use -c 2048 -n 2048 to get the full context window.
     public const int LLaMaContextTokens = 2048;
 
-    public const int MaxUsualResponseTokens = 80;
+    public const int MaxUsualResponseTokens = 110;
     public const int MaxProgrammingResponseTokens = 200;
 
     public abstract PromptResult CreatePrompt(PromptRequest promptRequest);
