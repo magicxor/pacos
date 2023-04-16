@@ -46,6 +46,6 @@ public static class OutputTransformation
             }
         }
 
-        return generatedResult;
+        return string.IsNullOrWhiteSpace(generatedResult) ? input : generatedResult;
     }
 }

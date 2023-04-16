@@ -182,12 +182,18 @@ public class TelegramBotService
 
                 var generatedResult = koboldResponse.Results?.FirstOrDefault()?.Text ?? "Error: kobold response is empty";
 
-                generatedResult = OutputTransformation.Transform(generatedResult);
+                generatedResult = OutputTransformation
+                    .Transform(generatedResult)
+                    .Cut(MaxTelegramMessageLength);
+
+                var replyText = string.IsNullOrWhiteSpace(generatedResult)
+                    ? "Error: generated result is empty"
+                    : generatedResult;
 
                 _logger.LogInformation("Response ({elapsed}): {generatedResult}", stopwatch.Elapsed.Humanize(), generatedResult);
 
                 await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id),
-                    generatedResult.Cut(MaxTelegramMessageLength, "empty"),
+                    replyText,
                     replyToMessageId: update.Message.MessageId,
                     cancellationToken: cancellationToken);
             }

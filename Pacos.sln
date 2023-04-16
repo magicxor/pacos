@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pacos", "Pacos\Pacos.csproj", "{4BB16099-2A05-42AE-AC4B-8A1BFBE68EBB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pacos.UnitTests", "Pacos.UnitTests\Pacos.UnitTests.csproj", "{49180F1E-0A2A-4C74-ADC4-03E023267E58}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{4BB16099-2A05-42AE-AC4B-8A1BFBE68EBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4BB16099-2A05-42AE-AC4B-8A1BFBE68EBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4BB16099-2A05-42AE-AC4B-8A1BFBE68EBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49180F1E-0A2A-4C74-ADC4-03E023267E58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49180F1E-0A2A-4C74-ADC4-03E023267E58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49180F1E-0A2A-4C74-ADC4-03E023267E58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49180F1E-0A2A-4C74-ADC4-03E023267E58}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
