@@ -98,10 +98,19 @@ This is a conversation between User and Pacos.",
         }
     }
 
-    /*
-    public void TestStringExtensionsLastIndexOfAny(string source, string expectedResult)
+    [TestCase(new []{"a", "b", "c"}, "abc", 2, "c")]
+    [TestCase(new []{"a.", "b.", "c."}, "abc.", 2, "c.")]
+    [TestCase(new []{@".""", @"!""", @"?"""}, @"Ha-ha-ha. Funny...""", 17, @".""")]
+    [TestCase(new []{"a", "b", "c"}, "def", -1, null)]
+    [TestCase(new []{@".""", @"!""", @"?"""}, @"Ha-ha-ha. Funny...", -1, null)]
+    [TestCase(new []{"aa", "bb", "cc"}, "abbc", 1, "bb")]
+    public void TestStringExtensionsLastIndexOfAny(string [] patterns, string source, int expectedLastIndex, string? expectedValue)
     {
-
+        var (actualLastIndex, actualValue) = source.LastIndexOfAny(patterns);
+        Assert.Multiple(() =>
+        {
+            Assert.That(actualLastIndex, Is.EqualTo(expectedLastIndex));
+            Assert.That(actualValue, Is.EqualTo(expectedValue));
+        });
     }
-    */
 }

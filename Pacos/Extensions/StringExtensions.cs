@@ -14,7 +14,7 @@ public static class StringExtensions
             : src[..maxLength];
     }
 
-    public static (int lastIndex, string? foundValue) LastIndexOfAny(this string source, string[] values)
+    public static (int lastIndex, string? lastValue) LastIndexOfAny(this string source, string[] values)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(values);
