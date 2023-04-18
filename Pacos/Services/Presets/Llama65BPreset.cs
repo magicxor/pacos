@@ -4,27 +4,23 @@ using Pacos.Services.Prompts;
 
 namespace Pacos.Services.Presets;
 
-public class AutoCompletion13BPreset : BasePresetFactory
+public class Llama65BPreset : BasePresetFactory
 {
-    private readonly AutoCompletionPromptFactory _autoCompletionPromptFactory;
+    private readonly ChatPromptFactory _chatPromptFactory;
 
-    public AutoCompletion13BPreset(AutoCompletionPromptFactory autoCompletionPromptFactory)
+    public Llama65BPreset(ChatPromptFactory chatPromptFactory)
     {
-        _autoCompletionPromptFactory = autoCompletionPromptFactory;
+        _chatPromptFactory = chatPromptFactory;
     }
 
     public override PromptResult CreatePrompt(PromptRequest promptRequest)
     {
-        return _autoCompletionPromptFactory.CreatePrompt(promptRequest);
+        return _chatPromptFactory.CreatePrompt(promptRequest);
     }
 
     public override KoboldRequest CreateRequestData(string prompt,
         int responseTokens = MaxUsualResponseTokens)
     {
-        // based on 65B config;
-        // see
-        // https://gist.github.com/shawwn/726e7531573c3cd64664ceb9d9e477fa
-        // https://gist.github.com/shawwn/63fe948dd4a6bc86ecfd6e51606a0b4b
         return new KoboldRequest
         {
             N = 1,
@@ -36,17 +32,17 @@ public class AutoCompletion13BPreset : BasePresetFactory
             TopK = 40,
             TopA = 0,
             Typical = 1,
-            Tfs = 1m,
-            RepPenRange = 1024,
-            RepPenSlope = 0.7m,
+            Tfs = 0.87m,
+            RepPenRange = 2048,
+            RepPenSlope = 0.3m,
             SamplerOrder = new List<int>
             {
+                5,
                 0,
-                1,
                 2,
                 3,
+                1,
                 4,
-                5,
                 6,
             },
             Quiet = true,
