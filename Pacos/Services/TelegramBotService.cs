@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Humanizer;
 using NTextCat;
+using Pacos.Constants;
 using Pacos.Enums;
 using Pacos.Extensions;
 using Pacos.Models.Domain;
@@ -25,12 +26,6 @@ public class TelegramBotService
     private readonly AutoCompletion13BPreset _autoCompletion13BPreset;
     private readonly Chat13BPreset _chat13BPreset;
     private readonly Instruction20BPreset _instruction20BPreset;
-
-    private const int MaxTelegramMessageLength = 4096;
-    private static readonly string[] ProgrammingMathPromptMarkers = { "{", "}", "[", "]", "==", "Console.", "public static void", "public static", "public void", "public class", "<<", ">>", "&&", "|", "C#", "F#", "C++", "javascript", " js", "typescript", "yml", "yaml", "json", "xml", "html", " программу ", " код ", "code snippet" };
-    private static readonly string[] Mentions = { "пакос,", "pacos," };
-    private const string AutoCompletionMarker = "!complete";
-    private const string InstructionMarker = "!";
 
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
@@ -77,7 +72,7 @@ public class TelegramBotService
                 context,
                 newContextItem));
 
-        var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
+        var isProgramRequest = Const.ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
         var maxResponseTokens = isProgramRequest
             ? BasePresetFactory.MaxProgrammingResponseTokens
             : BasePresetFactory.MaxUsualResponseTokens;
@@ -97,7 +92,7 @@ public class TelegramBotService
                 context,
                 newContextItem));
 
-        var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
+        var isProgramRequest = Const.ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
         var maxResponseTokens = isProgramRequest
             ? BasePresetFactory.MaxProgrammingResponseTokens
             : BasePresetFactory.MaxUsualResponseTokens;
@@ -117,7 +112,7 @@ public class TelegramBotService
                 context,
                 newContextItem));
 
-        var isProgramRequest = ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
+        var isProgramRequest = Const.ProgrammingMathPromptMarkers.Any(m => newContextItem.UserMessage.Contains(m));
         var maxResponseTokens = isProgramRequest
             ? BasePresetFactory.MaxProgrammingResponseTokens
             : BasePresetFactory.MaxUsualResponseTokens;
@@ -149,7 +144,7 @@ public class TelegramBotService
         {
             if (update is { Type: UpdateType.Message, Message: { Text: { } updateMessageText, ForwardFrom: null, ForwardFromChat: null, ForwardSignature: null, From: not null } }
                 && update.Message.IsAutomaticForward != true
-                && Mentions.FirstOrDefault(m => updateMessageText.StartsWith(m, StringComparison.InvariantCultureIgnoreCase)) is { } mentionText
+                && Const.Mentions.FirstOrDefault(m => updateMessageText.StartsWith(m, StringComparison.InvariantCultureIgnoreCase)) is { } mentionText
                 && updateMessageText.Length > mentionText.Length)
             {
                 var author = update.Message.From.Username ?? string.Join(' ', update.Message.From.FirstName, update.Message.From.LastName);
@@ -157,10 +152,10 @@ public class TelegramBotService
 
                 var (messageType, messageTextTrimmed) = message switch
                 {
-                    string when message.StartsWith(AutoCompletionMarker, StringComparison.InvariantCultureIgnoreCase)
-                                && message.Length > AutoCompletionMarker.Length => (UserMessageTypes.AutoCompletion, message[AutoCompletionMarker.Length..].Trim()),
-                    string when message.StartsWith(InstructionMarker, StringComparison.InvariantCultureIgnoreCase)
-                                && message.Length > InstructionMarker.Length => (UserMessageTypes.Instruction, message[InstructionMarker.Length..].Trim()),
+                    string when message.StartsWith(Const.AutoCompletionMarker, StringComparison.InvariantCultureIgnoreCase)
+                                && message.Length > Const.AutoCompletionMarker.Length => (UserMessageTypes.AutoCompletion, message[Const.AutoCompletionMarker.Length..].Trim()),
+                    string when message.StartsWith(Const.InstructionMarker, StringComparison.InvariantCultureIgnoreCase)
+                                && message.Length > Const.InstructionMarker.Length => (UserMessageTypes.Instruction, message[Const.InstructionMarker.Length..].Trim()),
                     _ => (UserMessageTypes.Normal, message),
                 };
 
@@ -184,7 +179,7 @@ public class TelegramBotService
 
                 generatedResult = OutputTransformation
                     .Transform(generatedResult)
-                    .Cut(MaxTelegramMessageLength);
+                    .Cut(Const.MaxTelegramMessageLength);
 
                 var replyText = string.IsNullOrWhiteSpace(generatedResult)
                     ? "Error: generated result is empty"

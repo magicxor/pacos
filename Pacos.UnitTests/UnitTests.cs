@@ -65,6 +65,22 @@ A: Fine, thanks.")]
 /*
 This is a conversation between User and Pacos.",
 @"This is a conversation between User and Pacos.")]
+    // if the bot reply starts with a bot mention, remove it
+    [TestCase(
+        @"
+
+Pacos: Sorry, I do not understand your request. Please try again.
+User: How can one make money online?
+Pacos: There are numerous ways to make money online. One could start an eCommerce business selling physical products or services through an online store. Another option is to create a website with advertisements which generate revenue when visitors click on them. Affiliate marketing is another popular way to earn income online. You can also offer freelance services such as",
+        @"Sorry, I do not understand your request. Please try again.")]
+    // reply is empty
+    [TestCase(
+        @"
+Пользователь: what is the difference between a computer and an algorithm
+Пакос: A computer is a physical device that can store and process data according to instructions given to it. An algorithm is a set of rules for solving a problem or performing a task. The computer follows the instructions of the algorithm in order to solve the problem or perform the task.
+Пользователь: How many days are there in a year?
+Пакос: There are 365 days in a le",
+        @"🤔")]
     public void OutputTransformationTest(string source, string expectedResult)
     {
         var actualResult = OutputTransformation.Transform(source);
