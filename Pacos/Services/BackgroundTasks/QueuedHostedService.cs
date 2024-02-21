@@ -15,7 +15,7 @@ public class QueuedHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Queued Hosted Service is running.");
+        _logger.LogInformation("Queued Hosted Service is running");
 
         await BackgroundProcessing(stoppingToken);
     }
@@ -29,23 +29,23 @@ public class QueuedHostedService : BackgroundService
 
             try
             {
-                _logger.LogInformation("Starting workItem processing... Queued tasks: {count}", TaskQueue.ItemCount);
+                _logger.LogInformation("Starting workItem processing... Queued tasks: {Count}", TaskQueue.ItemCount);
 
                 await workItem(stoppingToken);
 
-                _logger.LogInformation("workItem processed. Queued tasks: {count}", TaskQueue.ItemCount);
+                _logger.LogInformation("workItem processed. Queued tasks: {Count}", TaskQueue.ItemCount);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Error occurred executing {WorkItem}.", nameof(workItem));
+                    "Error occurred executing {WorkItem}", nameof(workItem));
             }
         }
     }
 
     public override async Task StopAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Queued Hosted Service is stopping.");
+        _logger.LogInformation("Queued Hosted Service is stopping");
 
         await base.StopAsync(stoppingToken);
     }

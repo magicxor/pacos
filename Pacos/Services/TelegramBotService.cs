@@ -56,7 +56,7 @@ public class TelegramBotService
         Update update,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Received update with type={update}", update.Type.ToString());
+        _logger.LogDebug("Received update with type={Update}", update.Type.ToString());
 
         await _taskQueue.QueueBackgroundWorkItemAsync(async token =>
             await HandleUpdateFunction(botClient, update, cancellationToken));
@@ -162,7 +162,7 @@ public class TelegramBotService
                 var language = _rankedLanguageIdentifier.Identify(messageTextTrimmed).FirstOrDefault();
                 var languageCode = language?.Item1?.Iso639_3 ?? "eng";
 
-                _logger.LogInformation("Processing the prompt from {author} (lang={languageCode}, type={userMessageType}): {updateMessageTextTrimmed}",
+                _logger.LogInformation("Processing the prompt from {Author} (lang={LanguageCode}, type={UserMessageType}): {UpdateMessageTextTrimmed}",
                     author, languageCode, messageType, messageTextTrimmed);
 
                 var (promptResult, koboldRequest) = UsePreset(
@@ -185,7 +185,7 @@ public class TelegramBotService
                     ? "Error: generated result is empty"
                     : generatedResult;
 
-                _logger.LogInformation("Response ({elapsed}): {generatedResult}", stopwatch.Elapsed.Humanize(), generatedResult);
+                _logger.LogInformation("Response ({Elapsed}): {GeneratedResult}", stopwatch.Elapsed.Humanize(), generatedResult);
 
                 await botClient.SendTextMessageAsync(new ChatId(update.Message.Chat.Id),
                     replyText,
